@@ -1,0 +1,11 @@
+# Vercel project serves the static Vite frontend only.
+backend/
+server/
+scripts/
+tests/
+docs/
+data/
+Dockerfile
+docker-compose.yml
+pytest.ini
+AGENTS.md

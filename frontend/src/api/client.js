@@ -55,20 +55,8 @@ export const authApi = {
       }
       return res.data;
     } catch (err) {
-      if (!err.response || [404, 405, 500, 502, 503].includes(err.response.status)) {
-        const fallbackSession = {
-          access_token: `case_connect_officer_token_${Date.now()}`,
-          user: {
-            id: 'investigator_officer',
-            username: 'investigator1',
-            role: role || 'investigator',
-            is_active: true
-          }
-        };
-        sessionStorage.setItem('case_connect_token', fallbackSession.access_token);
-        sessionStorage.setItem('case_connect_user', JSON.stringify(fallbackSession.user));
-        return fallbackSession;
-      }
+      // Never create a client-side demo token in production. Authentication must
+      // be confirmed by the real backend before a session is established.
       throw err;
     }
   },
