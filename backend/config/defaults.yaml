@@ -1,0 +1,297 @@
+# Case Connect AI — Global Algorithmic Defaults
+# These defaults can be overridden on a per-case basis via the Case Settings screen.
+
+communication:
+  spike:
+    mad_multiplier: 3.0    # k in: median + k * 1.4826 * MAD
+    baseline_window_days: 14 # Days of historical calls to establish normal baseline
+    min_history_days: 5    # Minimum days required before flagging spikes
+    min_call_floor: 5      # Daily calls required before triggering alert
+  frequent_pair:
+    iqr_multiplier: 1.5    # Q3 + 1.5 * IQR outlier threshold
+  new_connection:
+    window_days: 7         # Days since first seen to consider connection "new"
+    min_early_calls: 5     # Calls within first 3 days to trigger anomaly
+  bridge:
+    min_betweenness_ratio: 0.1 # Minimum normalised betweenness centrality
+
+money:
+  fan_in:
+    min_sources: 3         # Distinct accounts sending funds
+    window_days: 7         # Timeframe in days
+  fan_out:
+    min_destinations: 3    # Distinct destination accounts
+    window_days: 7         # Timeframe in days
+  rapid_pass_through:
+    inflow_percent: 80.0   # Percentage of incoming funds that leave
+    max_hours: 48          # Maximum time window between arrival and departure
+  splitting:
+    reporting_limit_rupees: 0 # 0 means disabled; set in case settings (e.g. 1000000 for 10L)
+    min_transfers: 3       # Number of near-limit transfers
+    window_days: 3         # Days window
+    threshold_ratio: 0.90  # Flag transfers between 90% and 100% of limit
+
+matching:
+  strengths:
+    same_account: 95
+    same_phone: 90
+    same_vehicle: 90
+    same_email: 85
+    same_device_imei: 70
+    dob_plus_similar_name: 60
+    same_address: 35
+    similar_name_only: 25
+    same_ip: 20            # Shared IP alone never suggests an entity merge
+  thresholds:
+    surname_similarity_min: 0.90
+    first_name_similarity_min: 0.85
+    high_level_min: 70
+    medium_level_min: 40
+
+lead_advisor:
+  weights:
+    money_flow: 30
+    bridge: 25
+    unusual_communication: 20
+    timing: 15
+    multi_document: 10
+  levels:
+    high_priority_min: 70
+    medium_priority_min: 40
+
+# Extraction Module V2 — Normalization, Validators, OCR, NER & Safety Defaults
+extraction:
+  default_region: "IN"           # Default ISO-3166 region code for phonenumbers parsing
+  timezone_display: "Asia/Kolkata" # Default local timezone attached to naive timestamps & curfew display
+  curfew_hours:
+    start_hour: 0                # Start of nocturnal/curfew window in timezone_display (00:00)
+    end_hour: 5                  # End of nocturnal/curfew window in timezone_display (05:00)
+  date_parse:
+    dayfirst_inference: true     # Scan all column dates to infer DD/MM vs MM/DD per column
+    fallback_dayfirst: true      # Indian DD/MM/YYYY default when all components <= 12
+  amount:
+    allow_bracket_negative: true # Treat accounting (1,200.00) as negative paise
+    indian_grouping: true        # Support lakh/crore comma grouping and unit words
+  validators:
+    aadhaar_checksum: true       # Enforce 12-digit Verhoeff checksum and leading digit 2-9
+    imei_luhn: true              # Enforce 15-digit Luhn checksum on IMEIs
+    account_len_min: 9           # Minimum digits for standard bank account number
+    account_len_max: 18          # Maximum digits for standard bank account number
+  digit_scripts:                 # Unicode numeral scripts converted to ASCII 0-9 before parsing
+    - "devanagari"
+    - "bengali"
+    - "gujarati"
+    - "gurmukhi"
+    - "kannada"
+    - "malayalam"
+    - "odia"
+    - "tamil"
+    - "telugu"
+    - "arabic_indic"
+  upload:
+    max_file_mb: 200
+    max_doc_mb: 20
+    max_image_mb: 30
+    allowed_types:
+      - ".csv"
+      - ".xlsx"
+      - ".json"
+      - ".jsonl"
+      - ".pdf"
+      - ".docx"
+      - ".txt"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".webp"
+      - ".bmp"
+      - ".tiff"
+      - ".tif"
+      - ".zip"
+    zip:
+      max_files: 50
+      max_uncompressed_mb: 500
+      max_ratio: 100.0
+      max_depth: 2
+  ingest:
+    chunk_rows: 2000
+    max_rows: 500000
+  pdf:
+    text_layer_min_chars: 40
+    render_dpi: 250
+  image_quality:
+    min_blur_score: 45.0
+    min_dpi: 120
+    min_width_px: 150
+    min_height_px: 80
+    max_skew_deg: 25.0
+    min_contrast: 20.0
+    min_brightness: 15.0
+    max_brightness: 252.0
+    preprocess:
+      deskew_min_deg: 0.5
+      denoise_h: 8
+      adaptive_block_size: 31
+      adaptive_c: 10
+  ocr:
+    provider: "tesseract"
+    languages:
+      - "eng"
+      - "hin"
+    handwritten_conf_cap: 0.65
+    handwritten_mean_conf_threshold: 0.68
+    handwritten_stroke_cv_threshold: 0.55
+    review_below_conf: 0.75
+    tesseract_cmd_env: "TESSERACT_CMD"
+    phash_duplicate_max_dist: 4
+  vision_provider:
+    enabled: false               # OFF by default (air-gap safe)
+    require_case_consent: true   # Requires explicit per-case officer consent + audit_log
+  ner:
+    model: "en_core_web_sm"
+    min_conf: 0.65
+    confidence_cutoffs:
+      legal_regex: 0.92
+      proper_name: 0.88
+      title_heuristic: 0.85
+      spacy_ner: 0.85
+      all_caps: 0.75
+    label_mapping:
+      PERSON: "PERSON"
+      ORG: "ORGANIZATION"
+      GPE: "LOCATION"
+      LOC: "LOCATION"
+  media:
+    enabled: false
+    whisper_model: "base"
+    whisper_compute: "int8"
+    language: "auto"
+    frame_interval_sec: 2.0
+    max_duration_min: 60
+    ffmpeg_path: ""
+    allowed_types:
+      - ".mp3"
+      - ".wav"
+      - ".m4a"
+      - ".ogg"
+      - ".mp4"
+      - ".mkv"
+      - ".avi"
+      - ".mov"
+    max_file_size_mb: 100
+    low_confidence_cutoff: 0.70
+  masking:
+    fields:
+      - "aadhaar"
+      - "account"
+      - "pan"
+      - "phone"
+    reveal_roles:
+      - "admin"
+      - "investigator"
+    mask_style: "last4"
+  malware_scanner:
+    enabled: false
+    provider: "noop"
+  anomalies:
+    pattern_min_run: 5
+    night_ratio_threshold: 0.50
+    unique_counterparty_threshold: 10
+    short_call_seconds: 15
+    short_call_ratio_threshold: 0.60
+    min_calls_for_ratio: 5
+    short_window_hours: 24
+    short_window_min_calls: 5
+    imei_min_msisdns: 2
+    msisdn_min_imeis: 2
+    cross_case_min_cases: 2
+    multi_name_min_distinct: 2
+    pattern_types:
+      - "sudden_spike"
+      - "very_frequent_pair"
+      - "sudden_new_connection"
+      - "shared_device"
+      - "bridge"
+      - "pattern_anomaly_number"
+      - "international_or_voip_in_domestic"
+      - "cross_case_identifier"
+      - "multi_name_identifier"
+      - "high_night_call_ratio"
+      - "high_unique_short_calls"
+      - "imei_multiple_msisdns"
+      - "msisdn_multiple_imeis"
+      - "short_activity_window"
+  completeness:
+    required_fields:
+      call:
+        - "caller"
+        - "receiver"
+        - "datetime_iso"
+        - "duration_seconds"
+      transaction:
+        - "from_account"
+        - "to_account"
+        - "amount_paise"
+        - "date_iso"
+      sdr:
+        - "phone"
+        - "name"
+        - "address"
+      ip_event:
+        - "identifier"
+        - "ip_address"
+        - "datetime_iso"
+      fir:
+        - "fir_no"
+        - "police_station"
+        - "incident_date"
+        - "incident_place"
+        - "complainant"
+        - "sections"
+        - "identifier"
+    optional_detector_columns:
+      call:
+        imei: "No IMEI column: shared-device and handset rotation detection unavailable"
+        cell_id: "No cell_id / tower column: colocation and tower movement analysis unavailable"
+        imsi: "No IMSI column: subscriber equipment correlation unavailable"
+      transaction:
+        balance_paise: "No balance column: opening/closing balance reconciliation unavailable"
+        reference: "No reference/UTR column: cross-bank reference correlation unavailable"
+    gap_days_threshold: 3
+    score_weights:
+      required_fields_weight: 0.50
+      valid_rows_weight: 0.25
+      date_continuity_weight: 0.15
+      detector_columns_weight: 0.10
+  banned_terms:
+    - "criminal"
+    - "suspect"
+    - "guilty"
+    - "mastermind"
+    - "fake"
+    - "fraud number"
+
+# Unified Record Store & Deterministic Merge Engine Defaults
+merge:
+  natural_keys:
+    call:
+      - ["caller", "receiver", "datetime_iso", "duration_seconds", "call_type"]
+      - ["caller", "receiver", "datetime_iso", "duration_seconds"]
+    transaction:
+      - ["txn_id", "from_account", "to_account", "amount_paise"]
+      - ["from_account", "to_account", "date_iso", "amount_paise", "direction", "reference"]
+    ip_event:
+      - ["phone", "ip_address", "timestamp_iso"]
+  source_trust_order:
+    - "officer"
+    - "structured_file"
+    - "text_layer_pdf"
+    - "ocr_printed"
+    - "ocr_handwritten"
+    - "asr_audio"
+    - "vision_cloud"
+  conflict_confidence_margin: 0.10
+  min_confidence_auto_accept: 0.75
+  needs_review_below: 0.70
+  confidence_boost_on_confirm: 0.05
+
